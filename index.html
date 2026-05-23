@@ -89,6 +89,9 @@ button{
 </head>
 
 <body>
+    <button onclick="requestPermission()">
+📱 開啟跌倒偵測
+</button>
 
 <div class="header">
 👴 智慧長者跌倒監控系統
@@ -108,9 +111,6 @@ button{
 
 <div class="card">
 
-<button class="alert-btn" onclick="sendAlert()">
-🚨 模擬跌倒
-</button>
 
 <button class="safe-btn" onclick="clearAlert()">
 ✅ 解除警報
@@ -131,6 +131,68 @@ Firebase 即時監控系統
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <script>
+    // iPhone跌倒偵測
+
+let triggered = false;
+
+function requestPermission(){
+
+    // iPhone感測器權限
+    if(typeof DeviceMotionEvent.requestPermission === 'function'){
+
+        DeviceMotionEvent.requestPermission()
+        .then(permissionState => {
+
+            if(permissionState === 'granted'){
+
+                startDetect();
+
+            }
+
+        })
+        .catch(console.error);
+
+    }else{
+
+        startDetect();
+
+    }
+
+}
+
+
+function startDetect(){
+
+    window.addEventListener("devicemotion", function(event){
+
+        let x = event.accelerationIncludingGravity.x;
+        let y = event.accelerationIncludingGravity.y;
+        let z = event.accelerationIncludingGravity.z;
+
+        let total =
+        Math.sqrt(x*x + y*y + z*z);
+
+        console.log(total);
+
+        // 跌倒條件（可調整）
+        if(total > 28 && !triggered){
+
+            triggered = true;
+
+            db.ref("user1/alert")
+            .set("fall detected");
+
+            alert("🚨 偵測到跌倒！");
+
+            setTimeout(()=>{
+                triggered = false;
+            },5000);
+
+        }
+
+    });
+
+}
 
 // 🔥 換成你的 Firebase URL
 var firebaseConfig = {
@@ -157,14 +219,6 @@ navigator.geolocation.getCurrentPosition(function(position){
 });
 
 
-// 🚨 發送跌倒警報
-function sendAlert(){
-
-    db.ref("user1/alert").set("fall detected");
-
-    alert("已送出跌倒警報！");
-
-}
 
 
 // ✅ 解除警報
